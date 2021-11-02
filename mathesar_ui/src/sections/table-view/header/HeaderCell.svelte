@@ -13,14 +13,17 @@
     SortOption,
     GroupOption,
     ColumnPosition,
+    ColumnsDataStore,
   } from '@mathesar/stores/table-data/types';
 
   export let columnPosition: ColumnPosition;
   export let column: Column;
   export let meta: Meta;
   export let constraintsDataStore: ConstraintsDataStore;
+  export let columnsDataStore: ColumnsDataStore;
   
   let isRequestingToggleAllowDuplicates = false;
+  let isRequestingToggleAllowNull = false;
   let menuIsOpen = false;
   
   $: ({ sort, group } = meta);
@@ -29,6 +32,7 @@
 
   $: allowsDuplicatesStore = constraintsDataStore.columnAllowsDuplicates(column);
   $: allowsDuplicates = $allowsDuplicatesStore as boolean;
+  $: allowsNull = column.nullable;
 
   function closeMenu() {
     menuIsOpen = false;
@@ -64,6 +68,22 @@
       console.log(msg); // TODO display error toast message
     } finally {
       isRequestingToggleAllowDuplicates = false;
+    }
+  }
+
+  async function toggleAllowNull() {
+    isRequestingToggleAllowNull = true;
+    try {
+      const newAllowsNull = !allowsNull;
+      await columnsDataStore.setNullabilityOfColumn(column, newAllowsNull);
+      const msg = `Column "${column.name}" will ${newAllowsNull ? '' : 'no longer '}allow NULL.`;
+      console.log(msg); // TODO display success toast message: msg
+      closeMenu();
+    } catch (error) {
+      const msg = `Unable to update "Allow NULL" of column "${column.name}". ${error.message as string}.`;
+      console.log(msg); // TODO display error toast message
+    } finally {
+      isRequestingToggleAllowNull = false;
     }
   }
 </script>
@@ -118,6 +138,18 @@
               Group by column
             {/if}
           </span>
+        </li>
+        <!--
+          TODO Once we have a DropdownMenu component, make this option
+          disabled if the column is a primary key.
+        -->
+        <li on:click={toggleAllowNull}>
+          {#if isRequestingToggleAllowNull}
+            <Icon class="opt" data={faSpinner} spin={true}/>
+          {:else}
+            <span class="opt"><Checkbox checked={allowsNull} /></span>
+          {/if}
+          <span>Allow NULL</span>
         </li>
         <!--
           TODO Once we have a DropdownMenu component, make this option

@@ -2,6 +2,7 @@ import { writable, get as getStoreValue } from 'svelte/store';
 import {
   deleteAPI,
   getAPI,
+  patchAPI,
   postAPI,
   States,
 } from '@mathesar/utils/api';
@@ -56,6 +57,9 @@ function api(url: string) {
     },
     remove(index: Column['index']) {
       return deleteAPI(`${url}${index}`);
+    },
+    update(index: Column['index'], data: Partial<Column>) {
+      return patchAPI<Partial<Column>>(`${url}${index}/`, data);
     },
   };
 }
@@ -180,5 +184,16 @@ export class ColumnsDataStore implements Writable<ColumnsData> {
     this.promise?.cancel();
     this.promise = null;
     this.listeners.clear();
+  }
+
+  async setNullabilityOfColumn(
+    column: Column,
+    nullable: boolean,
+  ): Promise<void> {
+    if (column.primary_key) {
+      throw new Error(`Column "${column.name}" cannot allow NULL because it is a primary key.`);
+    }
+    await this.api.update(column.index, { nullable });
+    await this.fetch();
   }
 }

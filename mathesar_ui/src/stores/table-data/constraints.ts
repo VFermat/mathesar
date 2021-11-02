@@ -180,7 +180,7 @@ export class ConstraintsDataStore implements Writable<ConstraintsData> {
       const currentlyIsUnique = true; // PK columns are always unique
       const shouldBeUnique = updater(currentlyIsUnique);
       if (!shouldBeUnique) {
-        throw new Error(`Column ${column.name} must remain unique because it is a primary key.`);
+        throw new Error(`Column "${column.name}" must remain unique because it is a primary key.`);
       }
       return true;
     }
